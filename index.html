@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
     <style>
       body { margin: 0; overflow: hidden; }
+      canvas, video { position: absolute; top: 0; left: 0; }
     </style>
   </head>
   <body>
@@ -14,6 +15,7 @@
       mindar-image="imageTargetSrc: target.mind; autoStart: true;"
       vr-mode-ui="enabled: false"
       embedded
+      device-orientation-permission-ui="enabled: true"
     >
       <a-assets>
         <a-asset-item id="model" src="model.glb"></a-asset-item>
@@ -21,7 +23,6 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target entity -->
       <a-entity id="target" mindar-image-target="targetIndex: 0">
         <a-gltf-model
           id="model-entity"
@@ -31,46 +32,30 @@
           visible="false"
         ></a-gltf-model>
       </a-entity>
-
-      <!-- This will hold our persistent model -->
-      <a-entity id="persistent-model" visible="false"></a-entity>
-
-      <script>
-        AFRAME.registerComponent("model-persistence", {
-          init: function () {
-            const model = document.querySelector("#model-entity");
-            const persistentModel = document.querySelector("#persistent-model");
-            const target = this.el;
-            let modelPlaced = false;
-
-            target.addEventListener("targetFound", () => {
-              model.setAttribute("visible", true);
-              
-              if (!modelPlaced) {
-                // Clone the model to persistent space
-                const modelClone = model.cloneNode(true);
-                modelClone.setAttribute("visible", true);
-                
-                // Get current world position
-                const worldPos = new THREE.Vector3();
-                model.object3D.getWorldPosition(worldPos);
-                
-                // Add to persistent entity
-                persistentModel.setAttribute("position", worldPos);
-                persistentModel.appendChild(modelClone);
-                modelPlaced = true;
-              }
-            });
-
-            target.addEventListener("targetLost", () => {
-              model.setAttribute("visible", false);
-              persistentModel.setAttribute("visible", true);
-            });
-          },
-        });
-
-        document.querySelector("#target").setAttribute("model-persistence", "");
-      </script>
     </a-scene>
+
+    <script>
+      AFRAME.registerComponent("model-persistence", {
+        init: function () {
+          const model = document.querySelector("#model-entity");
+          const target = document.querySelector("#target");
+
+          target.addEventListener("targetFound", () => {
+            model.setAttribute("visible", true);
+          });
+
+          target.addEventListener("targetLost", () => {
+            // Leave model visible after image disappears
+          });
+        },
+      });
+
+      // Attach component after scene is loaded
+      window.addEventListener("DOMContentLoaded", () => {
+        const target = document.querySelector("#target");
+        target.setAttribute("model-persistence", "");
+      });
+    </script>
   </body>
 </html>
+
