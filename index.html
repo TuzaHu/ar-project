@@ -7,21 +7,19 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
     <style>
       body { margin: 0; overflow: hidden; }
-      canvas, video { position: absolute; top: 0; left: 0; }
     </style>
   </head>
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: target.mind; autoStart: true;"
+      mindar-image="imageTargetSrc: ./target.mind; autoStart: true;"
       vr-mode-ui="enabled: false"
       embedded
-      device-orientation-permission-ui="enabled: true"
     >
       <a-assets>
-        <a-asset-item id="model" src="model.glb"></a-asset-item>
+        <a-asset-item id="model" src="./model.glb"></a-asset-item>
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera look-controls="enabled: false"></a-camera>
 
       <a-entity id="target" mindar-image-target="targetIndex: 0">
         <a-gltf-model
@@ -32,30 +30,56 @@
           visible="false"
         ></a-gltf-model>
       </a-entity>
+
+      <a-entity id="persistent-model" visible="false"></a-entity>
+
+      <script>
+        AFRAME.registerComponent("model-persistence", {
+          init: function () {
+            const model = document.querySelector("#model-entity");
+            const persistentModel = document.querySelector("#persistent-model");
+            const target = this.el;
+            let modelPlaced = false;
+
+            if (!model || !persistentModel) {
+              console.error("Model or persistent model entity not found");
+              return;
+            }
+
+            target.addEventListener("targetFound", () => {
+              console.log("Target found");
+              model.setAttribute("visible", true);
+              persistentModel.setAttribute("visible", false);
+              if (!modelPlaced) {
+                const worldPos = new THREE.Vector3();
+                model.object3D.getWorldPosition(worldPos).catch((err) => {
+                  console.error("Error getting world position:", err);
+                });
+                const modelClone = document.createElement("a-gltf-model");
+                modelClone.setAttribute("src", "#model");
+                modelClone.setAttribute("scale", model.getAttribute("scale"));
+                modelClone.setAttribute("position", model.getAttribute("position"));
+                modelClone.setAttribute("visible", true);
+                persistentModel.setAttribute("position", worldPos);
+                persistentModel.appendChild(modelClone);
+                modelPlaced = true;
+              }
+            });
+
+            target.addEventListener("targetLost", () => {
+              console.log("Target lost");
+              model.setAttribute("visible", false);
+              persistentModel.setAttribute("visible", true);
+            });
+
+            model.addEventListener("model-error", (event) => {
+              console.error("Error loading model:", event.detail);
+            });
+          },
+        });
+
+        document.querySelector("#target").setAttribute("model-persistence", "");
+      </script>
     </a-scene>
-
-    <script>
-      AFRAME.registerComponent("model-persistence", {
-        init: function () {
-          const model = document.querySelector("#model-entity");
-          const target = document.querySelector("#target");
-
-          target.addEventListener("targetFound", () => {
-            model.setAttribute("visible", true);
-          });
-
-          target.addEventListener("targetLost", () => {
-            // Leave model visible after image disappears
-          });
-        },
-      });
-
-      // Attach component after scene is loaded
-      window.addEventListener("DOMContentLoaded", () => {
-        const target = document.querySelector("#target");
-        target.setAttribute("model-persistence", "");
-      });
-    </script>
   </body>
 </html>
-
