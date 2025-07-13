@@ -21,6 +21,7 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+      <!-- Target entity -->
       <a-entity id="target" mindar-image-target="targetIndex: 0">
         <a-gltf-model
           id="model-entity"
@@ -31,19 +32,39 @@
         ></a-gltf-model>
       </a-entity>
 
+      <!-- This will hold our persistent model -->
+      <a-entity id="persistent-model" visible="false"></a-entity>
+
       <script>
         AFRAME.registerComponent("model-persistence", {
           init: function () {
             const model = document.querySelector("#model-entity");
+            const persistentModel = document.querySelector("#persistent-model");
             const target = this.el;
+            let modelPlaced = false;
 
             target.addEventListener("targetFound", () => {
               model.setAttribute("visible", true);
+              
+              if (!modelPlaced) {
+                // Clone the model to persistent space
+                const modelClone = model.cloneNode(true);
+                modelClone.setAttribute("visible", true);
+                
+                // Get current world position
+                const worldPos = new THREE.Vector3();
+                model.object3D.getWorldPosition(worldPos);
+                
+                // Add to persistent entity
+                persistentModel.setAttribute("position", worldPos);
+                persistentModel.appendChild(modelClone);
+                modelPlaced = true;
+              }
             });
 
-            // Optional: do NOT hide the model when target is lost
             target.addEventListener("targetLost", () => {
-              // Do nothing — keep the model visible
+              model.setAttribute("visible", false);
+              persistentModel.setAttribute("visible", true);
             });
           },
         });
@@ -53,4 +74,3 @@
     </a-scene>
   </body>
 </html>
-
