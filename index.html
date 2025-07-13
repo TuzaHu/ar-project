@@ -1,31 +1,56 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>MindAR WebAR</title>
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; }
-  </style>
-</head>
-<body>
-  <a-scene mindar-image="imageTargetSrc: target.mind; autoStart: true;" vr-mode-ui="enabled: false">
-    <a-assets>
-      <a-asset-item id="model" src="model.glb"></a-asset-item>
-    </a-assets>
+  <head>
+    <meta charset="utf-8" />
+    <title>MindAR Persistent Model</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <a-scene
+      mindar-image="imageTargetSrc: target.mind; autoStart: true;"
+      vr-mode-ui="enabled: false"
+      embedded
+    >
+      <a-assets>
+        <a-asset-item id="model" src="model.glb"></a-asset-item>
+      </a-assets>
 
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-gltf-model 
-        src="#model" 
-        scale="0.1 0.1 0.1" 
-        position="0 0 0"
-        animation__position="property: position; to: 0 0 0; dur: 300; easing: easeOutQuad"
-        animation__rotation="property: rotation; to: 0 0 0; dur: 300; easing: easeOutQuad"
-      ></a-gltf-model>
-    </a-entity>
-  </a-scene>
-</body>
+      <a-entity id="target" mindar-image-target="targetIndex: 0">
+        <a-gltf-model
+          id="model-entity"
+          src="#model"
+          scale="0.1 0.1 0.1"
+          position="0 0 0"
+          visible="false"
+        ></a-gltf-model>
+      </a-entity>
+
+      <script>
+        AFRAME.registerComponent("model-persistence", {
+          init: function () {
+            const model = document.querySelector("#model-entity");
+            const target = this.el;
+
+            target.addEventListener("targetFound", () => {
+              model.setAttribute("visible", true);
+            });
+
+            // Optional: do NOT hide the model when target is lost
+            target.addEventListener("targetLost", () => {
+              // Do nothing — keep the model visible
+            });
+          },
+        });
+
+        document.querySelector("#target").setAttribute("model-persistence", "");
+      </script>
+    </a-scene>
+  </body>
 </html>
+
