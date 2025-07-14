@@ -2,21 +2,13 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Persistent Model</title>
+    <title>Persistent AR Model</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
     <style>
-      html, body {
+      body {
         margin: 0;
-        padding: 0;
         overflow: hidden;
-        width: 100%;
-        height: 100%;
-      }
-      canvas, video {
-        position: absolute;
-        top: 0;
-        left: 0;
       }
     </style>
   </head>
@@ -24,50 +16,55 @@
     <a-scene
       mindar-image="imageTargetSrc: target.mind; autoStart: true;"
       vr-mode-ui="enabled: false"
+      renderer="colorManagement: true;"
       embedded
-      device-orientation-permission-ui="enabled: true"
     >
       <a-assets>
         <a-asset-item id="model" src="model.glb"></a-asset-item>
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: true"></a-camera>
 
-      <!-- image tracking entity -->
-      <a-entity id="target" mindar-image-target="targetIndex: 0">
+      <!-- Target for detection only (hidden) -->
+      <a-entity id="target" mindar-image-target="targetIndex: 0" visible="false"></a-entity>
+      
+      <!-- Model that will persist (initially hidden) -->
+      <a-entity id="persistent-model" visible="false" position="0 0 -1.5">
+        <a-gltf-model
+          src="#model"
+          scale="0.5 0.5 0.5"
+          rotation="0 0 0"
+        ></a-gltf-model>
       </a-entity>
 
-      <!-- model placed in world space, not tied to target -->
-      <a-gltf-model
-        id="model-entity"
-        src="#model"
-        scale="0.1 0.1 0.1"
-        position="0 0 0"
-        visible="false"
-      ></a-gltf-model>
+      <!-- Test with a simple box if model doesn't appear -->
+      <a-box id="test-box" color="red" position="0 0 -2" width="0.5" height="0.5" depth="0.5" visible="false"></a-box>
     </a-scene>
 
     <script>
-      AFRAME.registerComponent('show-once', {
-        init: function () {
-          const model = document.querySelector('#model-entity');
-          const target = this.el;
+      document.addEventListener('DOMContentLoaded', () => {
+        const target = document.querySelector('#target');
+        const model = document.querySelector('#persistent-model');
+        const testBox = document.querySelector('#test-box');
+        let modelActivated = false;
 
-          target.addEventListener('targetFound', () => {
-            // Set model visible
+        target.addEventListener('targetFound', () => {
+          if (!modelActivated) {
             model.setAttribute('visible', true);
-
-            // Optional: move model to target's current position
-            const targetPos = target.object3D.position;
-            const targetRot = target.object3D.rotation;
-            model.object3D.position.copy(targetPos);
-            model.object3D.rotation.copy(targetRot);
-          });
-        }
+            testBox.setAttribute('visible', true);
+            modelActivated = true;
+            
+            // Position model 1.5m in front of camera
+            const camera = document.querySelector('a-camera');
+            const cameraPos = camera.getAttribute('position');
+            model.setAttribute('position', {
+              x: cameraPos.x,
+              y: cameraPos.y,
+              z: cameraPos.z - 1.5
+            });
+          }
+        });
       });
-
-      document.querySelector('#target').setAttribute('show-once', '');
     </script>
   </body>
 </html>
-
