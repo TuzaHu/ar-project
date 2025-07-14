@@ -33,51 +33,41 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target entity - just for detection -->
-      <a-entity id="target" mindar-image-target="targetIndex: 0" visible="false"></a-entity>
-      
-      <!-- Persistent model placed in world space -->
-      <a-entity id="model-container" visible="false" position="0 0 -1">
-        <a-gltf-model
-          id="model-entity"
-          src="#model"
-          scale="0.1 0.1 0.1"
-          position="0 0 0"
-        ></a-gltf-model>
+      <!-- image tracking entity -->
+      <a-entity id="target" mindar-image-target="targetIndex: 0">
       </a-entity>
+
+      <!-- model placed in world space, not tied to target -->
+      <a-gltf-model
+        id="model-entity"
+        src="#model"
+        scale="0.1 0.1 0.1"
+        position="0 0 0"
+        visible="false"
+      ></a-gltf-model>
     </a-scene>
 
     <script>
-      AFRAME.registerComponent('persistent-model', {
+      AFRAME.registerComponent('show-once', {
         init: function () {
-          const modelContainer = document.querySelector('#model-container');
-          let modelShown = false;
-          
-          this.el.addEventListener('targetFound', () => {
-            if (!modelShown) {
-              modelContainer.setAttribute('visible', true);
-              modelShown = true;
-              
-              // Get the camera position and orientation
-              const camera = document.querySelector('a-camera');
-              const cameraPos = camera.getAttribute('position');
-              const cameraRot = camera.getAttribute('rotation');
-              
-              // Position the model relative to camera (1 meter in front)
-              modelContainer.setAttribute('position', {
-                x: cameraPos.x,
-                y: cameraPos.y,
-                z: cameraPos.z - 1
-              });
-              
-              // Optional: Align with camera rotation
-              // modelContainer.setAttribute('rotation', cameraRot);
-            }
+          const model = document.querySelector('#model-entity');
+          const target = this.el;
+
+          target.addEventListener('targetFound', () => {
+            // Set model visible
+            model.setAttribute('visible', true);
+
+            // Optional: move model to target's current position
+            const targetPos = target.object3D.position;
+            const targetRot = target.object3D.rotation;
+            model.object3D.position.copy(targetPos);
+            model.object3D.rotation.copy(targetRot);
           });
         }
       });
 
-      document.querySelector('#target').setAttribute('persistent-model', '');
+      document.querySelector('#target').setAttribute('show-once', '');
     </script>
   </body>
 </html>
+
