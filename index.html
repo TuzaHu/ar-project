@@ -33,29 +33,39 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity id="target" mindar-image-target="targetIndex: 0" visible="true">
+      <!-- Target entity - just for detection -->
+      <a-entity id="target" mindar-image-target="targetIndex: 0" visible="false"></a-entity>
+      
+      <!-- Separate entity for the model that stays persistent -->
+      <a-entity id="model-container" visible="false">
         <a-gltf-model
           id="model-entity"
           src="#model"
           scale="0.1 0.1 0.1"
           position="0 0 0"
-          visible="false"
         ></a-gltf-model>
       </a-entity>
     </a-scene>
 
     <script>
-      AFRAME.registerComponent('show-once', {
+      AFRAME.registerComponent('persistent-model', {
         init: function () {
-          const model = document.querySelector('#model-entity');
+          const modelContainer = document.querySelector('#model-container');
+          let modelShown = false;
+          
           this.el.addEventListener('targetFound', () => {
-            model.setAttribute('visible', true);
+            if (!modelShown) {
+              modelContainer.setAttribute('visible', true);
+              modelShown = true;
+              
+              // Optional: You can remove the target after first detection
+              // this.el.setAttribute('visible', false);
+            }
           });
         }
       });
 
-      document.querySelector('#target').setAttribute('show-once', '');
+      document.querySelector('#target').setAttribute('persistent-model', '');
     </script>
   </body>
 </html>
-
