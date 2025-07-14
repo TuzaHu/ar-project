@@ -36,8 +36,8 @@
       <!-- Target entity - just for detection -->
       <a-entity id="target" mindar-image-target="targetIndex: 0" visible="false"></a-entity>
       
-      <!-- Separate entity for the model that stays persistent -->
-      <a-entity id="model-container" visible="false">
+      <!-- Persistent model placed in world space -->
+      <a-entity id="model-container" visible="false" position="0 0 -1">
         <a-gltf-model
           id="model-entity"
           src="#model"
@@ -58,8 +58,20 @@
               modelContainer.setAttribute('visible', true);
               modelShown = true;
               
-              // Optional: You can remove the target after first detection
-              // this.el.setAttribute('visible', false);
+              // Get the camera position and orientation
+              const camera = document.querySelector('a-camera');
+              const cameraPos = camera.getAttribute('position');
+              const cameraRot = camera.getAttribute('rotation');
+              
+              // Position the model relative to camera (1 meter in front)
+              modelContainer.setAttribute('position', {
+                x: cameraPos.x,
+                y: cameraPos.y,
+                z: cameraPos.z - 1
+              });
+              
+              // Optional: Align with camera rotation
+              // modelContainer.setAttribute('rotation', cameraRot);
             }
           });
         }
