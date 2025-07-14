@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Persistent Model Fixed</title>
+    <title>MindAR Persistent Model</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
     <style>
@@ -31,18 +31,16 @@
       device-orientation-permission-ui="enabled: true"
     >
       <a-assets>
-        <a-asset-item
-          id="model"
-          src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"
-        ></a-asset-item>
+        <!-- Use your hosted GLB model path below -->
+        <a-asset-item id="model" src="model.glb"></a-asset-item>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Marker -->
+      <!-- Marker target -->
       <a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
 
-      <!-- Model in world space -->
+      <!-- Model, hidden initially -->
       <a-gltf-model
         id="model-entity"
         src="#model"
@@ -57,12 +55,9 @@
           const model = document.querySelector('#model-entity');
           const target = this.el;
 
-          console.log("🕹️ Component initialized");
-
           target.addEventListener('targetFound', () => {
             console.log("✅ Target found!");
 
-            // Copy world position and rotation
             const targetObj = target.object3D;
             const worldPos = new THREE.Vector3();
             const worldQuat = new THREE.Quaternion();
@@ -77,7 +72,7 @@
 
           target.addEventListener('targetLost', () => {
             console.log("🚫 Target lost — model stays");
-            // Do nothing — model stays visible
+            // Do nothing — model remains in place
           });
         }
       });
