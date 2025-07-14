@@ -2,13 +2,21 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Persistent AR Model</title>
+    <title>MindAR Persistent Model with Debug</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
     <style>
-      body {
+      html, body {
         margin: 0;
+        padding: 0;
         overflow: hidden;
+        width: 100%;
+        height: 100%;
+      }
+      canvas, video {
+        position: absolute;
+        top: 0;
+        left: 0;
       }
     </style>
   </head>
@@ -16,55 +24,59 @@
     <a-scene
       mindar-image="imageTargetSrc: target.mind; autoStart: true;"
       vr-mode-ui="enabled: false"
-      renderer="colorManagement: true;"
       embedded
+      device-orientation-permission-ui="enabled: true"
     >
       <a-assets>
-        <a-asset-item id="model" src="model.glb"></a-asset-item>
+        <!-- Use a known-good sample model -->
+        <a-asset-item
+          id="model"
+          src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"
+        ></a-asset-item>
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: true"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target for detection only (hidden) -->
-      <a-entity id="target" mindar-image-target="targetIndex: 0" visible="false"></a-entity>
-      
-      <!-- Model that will persist (initially hidden) -->
-      <a-entity id="persistent-model" visible="false" position="0 0 -1.5">
-        <a-gltf-model
-          src="#model"
-          scale="0.5 0.5 0.5"
-          rotation="0 0 0"
-        ></a-gltf-model>
-      </a-entity>
+      <!-- Marker tracking entity -->
+      <a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
 
-      <!-- Test with a simple box if model doesn't appear -->
-      <a-box id="test-box" color="red" position="0 0 -2" width="0.5" height="0.5" depth="0.5" visible="false"></a-box>
+      <!-- Model outside of target so it persists -->
+      <a-gltf-model
+        id="model-entity"
+        src="#model"
+        scale="0.1 0.1 0.1"
+        position="0 0 0"
+        visible="false"
+      ></a-gltf-model>
     </a-scene>
 
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const target = document.querySelector('#target');
-        const model = document.querySelector('#persistent-model');
-        const testBox = document.querySelector('#test-box');
-        let modelActivated = false;
+      AFRAME.registerComponent('show-once', {
+        init: function () {
+          const model = document.querySelector('#model-entity');
+          const target = this.el;
 
-        target.addEventListener('targetFound', () => {
-          if (!modelActivated) {
+          console.log("🕹️ Component initialized");
+
+          target.addEventListener('targetFound', () => {
+            console.log("✅ Target found!");
             model.setAttribute('visible', true);
-            testBox.setAttribute('visible', true);
-            modelActivated = true;
-            
-            // Position model 1.5m in front of camera
-            const camera = document.querySelector('a-camera');
-            const cameraPos = camera.getAttribute('position');
-            model.setAttribute('position', {
-              x: cameraPos.x,
-              y: cameraPos.y,
-              z: cameraPos.z - 1.5
-            });
-          }
-        });
+
+            // Optionally sync position/rotation to where the target was
+            const pos = target.object3D.position;
+            const rot = target.object3D.rotation;
+            model.object3D.position.copy(pos);
+            model.object3D.rotation.copy(rot);
+          });
+
+          target.addEventListener('targetLost', () => {
+            console.log("🚫 Target lost (model stays visible)");
+            // Model stays visible
+          });
+        }
       });
+
+      document.querySelector('#target').setAttribute('show-once', '');
     </script>
   </body>
 </html>
