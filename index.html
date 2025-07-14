@@ -2,69 +2,55 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR – full-screen fix + debug</title>
+    <title>MindAR Debug Demo</title>
 
-    <!-- Mobile viewport fix -->
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-
-    <!-- A-Frame + MindAR -->
+    <!-- A-Frame and MindAR -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.min.js"></script>
 
+    <!-- Page styling -->
     <style>
-      /* 1. Reset page */
-      html,
-      body {
+      html, body {
         margin: 0;
         padding: 0;
-        height: 100%;
         overflow: hidden;
-        background: #000; /* dark fallback instead of white */
+        width: 100vw;
+        height: 100vh;
+        background: black;
       }
-
-      /* 2. Force camera video & WebGL canvas to cover entire viewport */
-      video,
-      canvas {
-        position: fixed;      /* sits on top of page flow */
+      a-scene {
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
         top: 0;
         left: 0;
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover;    /* crop instead of letter-boxing */
-      }
-
-      /* 3. Make the A-Frame scene itself fill the window */
-      a-scene {
-        width: 100vw !important;
-        height: 100vh !important;
       }
     </style>
   </head>
-
   <body>
+    <!-- AR Scene -->
     <a-scene
       mindar-image="imageTargetSrc: target.mind; autoStart: true;"
       vr-mode-ui="enabled: false"
       embedded
       device-orientation-permission-ui="enabled: true"
+      color-space="sRGB"
+      renderer="antialias: true; alpha: true"
     >
       <a-assets>
-        <!-- Known-working GLTF model -->
         <a-asset-item
           id="model"
           src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"
         ></a-asset-item>
       </a-assets>
 
-      <a-camera look-controls="enabled: false"></a-camera>
+      <!-- Camera -->
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- image target entity (does NOT hold the model) -->
+      <!-- Marker target -->
       <a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
 
-      <!-- model sits at world origin; becomes visible after first detection -->
+      <!-- 3D model (starts hidden) -->
       <a-gltf-model
         id="model-entity"
         src="#model"
@@ -74,31 +60,32 @@
       ></a-gltf-model>
     </a-scene>
 
+    <!-- Debug + Activation Script -->
     <script>
-      /* Component: show model once, keep it visible */
-      AFRAME.registerComponent("show-once", {
-        init() {
-          const model = document.querySelector("#model-entity");
+      AFRAME.registerComponent('show-once', {
+        init: function () {
+          const model = document.querySelector('#model-entity');
           const target = this.el;
 
-          console.log("🕹️ show-once component ready");
+          console.log("🕹️ Component initialized");
 
-          target.addEventListener("targetFound", () => {
+          target.addEventListener('targetFound', () => {
             console.log("✅ Target found!");
-            model.setAttribute("visible", true);
+            model.setAttribute('visible', true);
 
-            /* Optionally “freeze” model at marker pose */
-            model.object3D.position.copy(target.object3D.position);
-            model.object3D.rotation.copy(target.object3D.rotation);
+            const pos = target.object3D.position;
+            const rot = target.object3D.rotation;
+            model.object3D.position.copy(pos);
+            model.object3D.rotation.copy(rot);
           });
 
-          target.addEventListener("targetLost", () => {
-            console.log("🚫 Target lost – model stays visible");
+          target.addEventListener('targetLost', () => {
+            console.log("🚫 Target lost — model stays");
           });
-        },
+        }
       });
 
-      document.querySelector("#target").setAttribute("show-once", "");
+      document.querySelector('#target').setAttribute('show-once', '');
     </script>
   </body>
 </html>
