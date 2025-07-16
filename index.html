@@ -48,6 +48,12 @@
           console.log('Model element:', model);
           console.log('Target element:', target);
 
+          // Test: Make model visible immediately for debugging
+          console.log('Making model visible for testing...');
+          model.setAttribute('visible', true);
+          model.setAttribute('position', '0 0 -2');
+          console.log('Model should now be visible at position 0 0 -2');
+
           target.addEventListener('targetFound', () => {
             console.log("✅ Target found!");
             
@@ -82,6 +88,10 @@
             console.log("🚫 Target lost — model stays in place");
             // Model stays visible and in position - do nothing
           });
+
+          // Add more debugging
+          console.log('Target event listeners added');
+          console.log('Checking if target has mindar-image-target component:', target.hasAttribute('mindar-image-target'));
         }
       });
 
@@ -97,6 +107,17 @@
             console.error('Target not found');
           }
         }, 1000);
+      });
+
+      // Add scene-level debugging
+      document.addEventListener('DOMContentLoaded', function() {
+        const scene = document.querySelector('a-scene');
+        scene.addEventListener('loaded', function() {
+          console.log('A-Frame scene loaded');
+        });
+        scene.addEventListener('renderstart', function() {
+          console.log('A-Frame rendering started');
+        });
       });
     </script>
   </body>
