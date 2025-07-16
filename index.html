@@ -21,14 +21,59 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity mindar-image-target="targetIndex: 0" id="target">
         <a-gltf-model
           src="#model"
           scale="0.1 0.1 0.1"
           position="0 0 0"
           rotation="0 0 0"
+          id="model-entity"
         ></a-gltf-model>
       </a-entity>
     </a-scene>
+
+    <script>
+      AFRAME.registerComponent('persistent-model', {
+        init: function () {
+          const model = document.querySelector('#model-entity');
+          const target = this.el;
+          let hasBeenPlaced = false;
+          let worldPosition = new THREE.Vector3();
+          let worldQuaternion = new THREE.Quaternion();
+
+          target.addEventListener('targetFound', () => {
+            console.log("✅ Target found!");
+            
+            if (!hasBeenPlaced) {
+              // First time finding target - capture the world position
+              const targetObj = target.object3D;
+              targetObj.getWorldPosition(worldPosition);
+              targetObj.getWorldQuaternion(worldQuaternion);
+              hasBeenPlaced = true;
+            }
+            
+            // Move model to the captured world position
+            model.object3D.position.copy(worldPosition);
+            model.object3D.quaternion.copy(worldQuaternion);
+            model.setAttribute('visible', true);
+          });
+
+          target.addEventListener('targetLost', () => {
+            console.log("🚫 Target lost — model stays in place");
+            // Model stays visible and in position - do nothing
+          });
+        }
+      });
+
+      // Add the component to the target entity
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+          const target = document.querySelector('#target');
+          if (target) {
+            target.setAttribute('persistent-model', '');
+          }
+        }, 1000);
+      });
+    </script>
   </body>
 </html>
