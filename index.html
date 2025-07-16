@@ -41,24 +41,41 @@
           const model = document.querySelector('#model-entity');
           const target = this.el;
           let hasBeenPlaced = false;
-          let worldPosition = new THREE.Vector3();
-          let worldQuaternion = new THREE.Quaternion();
+          let savedPosition = new THREE.Vector3();
+          let savedRotation = new THREE.Vector3();
+
+          console.log('Persistent model component initialized');
+          console.log('Model element:', model);
+          console.log('Target element:', target);
 
           target.addEventListener('targetFound', () => {
             console.log("✅ Target found!");
             
             if (!hasBeenPlaced) {
-              // First time finding target - capture the world position
-              const targetObj = target.object3D;
-              targetObj.getWorldPosition(worldPosition);
-              targetObj.getWorldQuaternion(worldQuaternion);
+              // First time finding target - save the position relative to camera
+              const camera = document.querySelector('a-camera');
+              const targetPosition = target.object3D.position.clone();
+              
+              // Get the distance from camera to target
+              const cameraPosition = camera.object3D.position;
+              const distance = cameraPosition.distanceTo(targetPosition);
+              
+              // Save position in front of camera
+              savedPosition.set(0, 0, -distance);
+              savedRotation.set(0, 0, 0);
+              
+              console.log('Saved position:', savedPosition);
+              console.log('Distance from camera:', distance);
+              
               hasBeenPlaced = true;
             }
             
-            // Move model to the captured world position
-            model.object3D.position.copy(worldPosition);
-            model.object3D.quaternion.copy(worldQuaternion);
+            // Position model in front of camera
+            model.setAttribute('position', savedPosition);
+            model.setAttribute('rotation', savedRotation);
             model.setAttribute('visible', true);
+            
+            console.log('Model positioned and should be visible');
           });
 
           target.addEventListener('targetLost', () => {
@@ -70,10 +87,14 @@
 
       // Add the component to the target entity
       document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, setting up persistent model');
         setTimeout(() => {
           const target = document.querySelector('#target');
           if (target) {
+            console.log('Found target, adding persistent-model component');
             target.setAttribute('persistent-model', '');
+          } else {
+            console.error('Target not found');
           }
         }, 1000);
       });
