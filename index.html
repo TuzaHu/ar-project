@@ -36,75 +36,58 @@
     </a-scene>
 
     <script>
-      AFRAME.registerComponent('persistent-model', {
+      AFRAME.registerComponent('persistent-vision', {
         init: function () {
-          const model = document.querySelector('#model-entity');
           const target = this.el;
-          let hasBeenPlaced = false;
-          let savedPosition = new THREE.Vector3();
-          let savedRotation = new THREE.Vector3();
-
-          console.log('Persistent model component initialized');
-          console.log('Model element:', model);
-          console.log('Target element:', target);
-
-          // Test: Make model visible immediately for debugging
-          console.log('Making model visible for testing...');
-          model.setAttribute('visible', true);
-          model.setAttribute('position', '0 0 -2');
-          console.log('Model should now be visible at position 0 0 -2');
+          let hasPlacedClone = false;
 
           target.addEventListener('targetFound', () => {
-            console.log("✅ Target found!");
-            
-            if (!hasBeenPlaced) {
-              // First time finding target - save the position relative to camera
-              const camera = document.querySelector('a-camera');
-              const targetPosition = target.object3D.position.clone();
-              
-              // Get the distance from camera to target
-              const cameraPosition = camera.object3D.position;
-              const distance = cameraPosition.distanceTo(targetPosition);
-              
-              // Save position in front of camera
-              savedPosition.set(0, 0, -distance);
-              savedRotation.set(0, 0, 0);
-              
-              console.log('Saved position:', savedPosition);
-              console.log('Distance from camera:', distance);
-              
-              hasBeenPlaced = true;
+            if (hasPlacedClone) return;
+            hasPlacedClone = true;
+            console.log('✅ Target found! Cloning model for persistence.');
+
+            // Find the model inside the target entity
+            const model = target.querySelector('a-gltf-model');
+            if (!model) {
+              console.error('Model not found inside target entity!');
+              return;
             }
-            
-            // Position model in front of camera
-            model.setAttribute('position', savedPosition);
-            model.setAttribute('rotation', savedRotation);
-            model.setAttribute('visible', true);
-            
-            console.log('Model positioned and should be visible');
+
+            // Clone the model
+            const clone = model.cloneNode(true);
+            clone.setAttribute('id', 'persistent-model-clone');
+            clone.setAttribute('visible', 'true');
+
+            // Get world position and quaternion of the target
+            const worldPos = new THREE.Vector3();
+            const worldQuat = new THREE.Quaternion();
+            target.object3D.getWorldPosition(worldPos);
+            target.object3D.getWorldQuaternion(worldQuat);
+
+            // Set the clone's position and rotation in world coordinates
+            clone.object3D.position.copy(worldPos);
+            clone.object3D.quaternion.copy(worldQuat);
+
+            // Add the clone to the scene root
+            const scene = document.querySelector('a-scene');
+            scene.object3D.add(clone.object3D);
+
+            console.log('Persistent model clone placed at:', worldPos, worldQuat);
           });
 
           target.addEventListener('targetLost', () => {
-            console.log("🚫 Target lost — model stays in place");
-            // Model stays visible and in position - do nothing
+            console.log('🚫 Target lost — persistent model remains in scene');
+            // Do nothing; the clone remains
           });
-
-          // Add more debugging
-          console.log('Target event listeners added');
-          console.log('Checking if target has mindar-image-target component:', target.hasAttribute('mindar-image-target'));
         }
       });
 
       // Add the component to the target entity
       document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM loaded, setting up persistent model');
         setTimeout(() => {
           const target = document.querySelector('#target');
           if (target) {
-            console.log('Found target, adding persistent-model component');
-            target.setAttribute('persistent-model', '');
-          } else {
-            console.error('Target not found');
+            target.setAttribute('persistent-vision', '');
           }
         }, 1000);
       });
