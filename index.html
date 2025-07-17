@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Persistent Model (Fixed)</title>
+    <title>MindAR Persistent Model (Final)</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -38,6 +38,7 @@
   </head>
 
   <body>
+    <!-- Debug Log Output -->
     <div id="log"></div>
 
     <a-scene
@@ -47,26 +48,23 @@
       renderer="colorManagement: true;"
     >
       <a-assets>
+        <!-- Use your own model.glb or replace with test model -->
         <a-asset-item id="model" src="model.glb"></a-asset-item>
       </a-assets>
 
-      <!-- Add light so model isn't dark -->
-      <a-entity light="type: directional; intensity: 1.2" position="0 2 2"></a-entity>
+      <!-- Optional lighting -->
+      <a-entity light="type: directional; intensity: 1.2;" position="0 2 2"></a-entity>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+      <!-- MindAR target -->
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <a-entity id="model-anchor">
-          <a-gltf-model
-            id="model-entity"
-            src="#model"
-            scale="0.5 0.5 0.5"
-            visible="false"
-          ></a-gltf-model>
-        </a-entity>
+        <!-- Anchor child (used for placement reference only) -->
+        <a-entity id="model-anchor"></a-entity>
       </a-entity>
     </a-scene>
 
+    <!-- JS logic to place model persistently -->
     <script>
       function log(msg) {
         const el = document.getElementById('log');
@@ -80,7 +78,6 @@
 
       AFRAME.registerComponent('persistent-model', {
         init: function () {
-          const model = document.querySelector('#model-entity');
           const anchor = document.querySelector('#model-anchor');
           const target = this.el;
           let placed = false;
@@ -95,33 +92,30 @@
 
               const worldPos = new THREE.Vector3();
               const worldQuat = new THREE.Quaternion();
-
               anchor.object3D.getWorldPosition(worldPos);
               anchor.object3D.getWorldQuaternion(worldQuat);
+              worldPos.y += 0.1; // lift slightly
 
-              // Convert quaternion to Euler rotation
               const euler = new THREE.Euler().setFromQuaternion(worldQuat, 'XYZ');
 
-              // Apply slight lift so model isn't hidden in image
-              worldPos.y += 0.1;
-
-              // Use A-Frame's setAttribute instead of object3D directly
-              model.setAttribute('position', {
+              // Create new model entity at scene root
+              const newModel = document.createElement('a-entity');
+              newModel.setAttribute('gltf-model', '#model');
+              newModel.setAttribute('scale', '0.5 0.5 0.5');
+              newModel.setAttribute('position', {
                 x: worldPos.x,
                 y: worldPos.y,
                 z: worldPos.z
               });
-
-              model.setAttribute('rotation', {
+              newModel.setAttribute('rotation', {
                 x: THREE.Math.radToDeg(euler.x),
                 y: THREE.Math.radToDeg(euler.y),
                 z: THREE.Math.radToDeg(euler.z)
               });
 
-              model.setAttribute('visible', true);
-
-              placed = true;
+              document.querySelector('a-scene').appendChild(newModel);
               log(`📌 Model placed at X:${worldPos.x.toFixed(2)} Y:${worldPos.y.toFixed(2)} Z:${worldPos.z.toFixed(2)}`);
+              placed = true;
             }
           });
 
