@@ -2,105 +2,91 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR WebAR</title>
+    <title>MindAR Persistent Model</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     <style>
       body { margin: 0; overflow: hidden; }
     </style>
   </head>
+
   <body>
     <a-scene
       mindar-image="imageTargetSrc: target.mind; autoStart: true;"
       vr-mode-ui="enabled: false"
       renderer="colorManagement: true;"
+      embedded
     >
+      <!-- Preload assets -->
       <a-assets>
         <a-asset-item id="model" src="model.glb"></a-asset-item>
       </a-assets>
 
+      <!-- Camera -->
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target entity -->
-      <a-entity mindar-image-target="targetIndex: 0" id="target"></a-entity>
-
-      <!-- Model entity - separate from target -->
-      <a-gltf-model
-        src="#model"
-        scale="0.1 0.1 0.1"
-        position="0 0 0"
-        rotation="0 0 0"
-        id="model-entity"
-        visible="false"
-      ></a-gltf-model>
+      <!-- Image target entity -->
+      <a-entity mindar-image-target="targetIndex: 0" id="target">
+        <!-- Anchor for model (initially follows image) -->
+        <a-entity id="model-anchor">
+          <a-gltf-model
+            id="model-entity"
+            src="#model"
+            scale="0.1 0.1 0.1"
+            position="0 0 0"
+            rotation="0 0 0"
+            visible="false"
+          ></a-gltf-model>
+        </a-entity>
+      </a-entity>
     </a-scene>
 
+    <!-- Persistent Model Component -->
     <script>
-      AFRAME.registerComponent('persistent-vision', {
+      AFRAME.registerComponent('persistent-model', {
         init: function () {
+          const model = document.querySelector('#model-entity');
+          const anchor = document.querySelector('#model-anchor');
           const target = this.el;
-          let hasPlacedClone = false;
+
+          let placed = false;
 
           target.addEventListener('targetFound', () => {
-            if (hasPlacedClone) return;
-            hasPlacedClone = true;
-            console.log('✅ Target found! Cloning model for persistence.');
+            console.log("✅ Target found");
 
-            // Find the model inside the target entity
-            const model = target.querySelector('a-gltf-model');
-            if (!model) {
-              console.error('Model not found inside target entity!');
-              return;
+            if (!placed) {
+              // Get world position/rotation of the anchor
+              anchor.object3D.updateMatrixWorld(true);
+              const worldPos = new THREE.Vector3();
+              const worldQuat = new THREE.Quaternion();
+
+              anchor.object3D.getWorldPosition(worldPos);
+              anchor.object3D.getWorldQuaternion(worldQuat);
+
+              // Detach model from marker
+              const scene = document.querySelector('a-scene').object3D;
+              scene.attach(model.object3D);
+
+              // Apply world transform
+              model.object3D.position.copy(worldPos);
+              model.object3D.quaternion.copy(worldQuat);
+              model.setAttribute('visible', true);
+
+              placed = true;
+              console.log("📌 Model placed and will persist");
             }
-
-            // Clone the model
-            const clone = model.cloneNode(true);
-            clone.setAttribute('id', 'persistent-model-clone');
-            clone.setAttribute('visible', 'true');
-
-            // Get world position and quaternion of the target
-            const worldPos = new THREE.Vector3();
-            const worldQuat = new THREE.Quaternion();
-            target.object3D.getWorldPosition(worldPos);
-            target.object3D.getWorldQuaternion(worldQuat);
-
-            // Set the clone's position and rotation in world coordinates
-            clone.object3D.position.copy(worldPos);
-            clone.object3D.quaternion.copy(worldQuat);
-
-            // Add the clone to the scene root
-            const scene = document.querySelector('a-scene');
-            scene.object3D.add(clone.object3D);
-
-            console.log('Persistent model clone placed at:', worldPos, worldQuat);
           });
 
           target.addEventListener('targetLost', () => {
-            console.log('🚫 Target lost — persistent model remains in scene');
-            // Do nothing; the clone remains
+            console.log("🚫 Target lost – model stays in place");
           });
         }
       });
 
-      // Add the component to the target entity
-      document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(() => {
-          const target = document.querySelector('#target');
-          if (target) {
-            target.setAttribute('persistent-vision', '');
-          }
-        }, 1000);
-      });
-
-      // Add scene-level debugging
-      document.addEventListener('DOMContentLoaded', function() {
-        const scene = document.querySelector('a-scene');
-        scene.addEventListener('loaded', function() {
-          console.log('A-Frame scene loaded');
-        });
-        scene.addEventListener('renderstart', function() {
-          console.log('A-Frame rendering started');
-        });
+      // Attach component to image target when DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        const target = document.querySelector('#target');
+        target.setAttribute('persistent-model', '');
       });
     </script>
   </body>
