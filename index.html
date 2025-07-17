@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Persistent Debug Box</title>
+    <title>MindAR Persistent Model (Fixed)</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -46,23 +46,23 @@
       vr-mode-ui="enabled: false"
       renderer="colorManagement: true;"
     >
-      <!-- Lighting -->
-      <a-entity light="type: directional; intensity: 1.2;" position="0 2 2"></a-entity>
+      <a-assets>
+        <a-asset-item id="model" src="model.glb"></a-asset-item>
+      </a-assets>
+
+      <!-- Add light so model isn't dark -->
+      <a-entity light="type: directional; intensity: 1.2" position="0 2 2"></a-entity>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Marker -->
       <a-entity mindar-image-target="targetIndex: 0" id="target">
         <a-entity id="model-anchor">
-          <!-- Simple red box instead of model -->
-          <a-box
+          <a-gltf-model
             id="model-entity"
-            color="red"
-            width="0.2"
-            height="0.2"
-            depth="0.2"
+            src="#model"
+            scale="0.5 0.5 0.5"
             visible="false"
-          ></a-box>
+          ></a-gltf-model>
         </a-entity>
       </a-entity>
     </a-scene>
@@ -99,23 +99,34 @@
               anchor.object3D.getWorldPosition(worldPos);
               anchor.object3D.getWorldQuaternion(worldQuat);
 
-              // Move box 20cm in front of marker along Z-axis
-              worldPos.z -= 0.2;
+              // Convert quaternion to Euler rotation
+              const euler = new THREE.Euler().setFromQuaternion(worldQuat, 'XYZ');
 
-              const scene3D = document.querySelector('a-scene').object3D;
-              scene3D.attach(model.object3D);
+              // Apply slight lift so model isn't hidden in image
+              worldPos.y += 0.1;
 
-              model.object3D.position.copy(worldPos);
-              model.object3D.quaternion.copy(worldQuat);
+              // Use A-Frame's setAttribute instead of object3D directly
+              model.setAttribute('position', {
+                x: worldPos.x,
+                y: worldPos.y,
+                z: worldPos.z
+              });
+
+              model.setAttribute('rotation', {
+                x: THREE.Math.radToDeg(euler.x),
+                y: THREE.Math.radToDeg(euler.y),
+                z: THREE.Math.radToDeg(euler.z)
+              });
+
               model.setAttribute('visible', true);
 
               placed = true;
-              log(`📌 Box placed at X:${worldPos.x.toFixed(2)} Y:${worldPos.y.toFixed(2)} Z:${worldPos.z.toFixed(2)}`);
+              log(`📌 Model placed at X:${worldPos.x.toFixed(2)} Y:${worldPos.y.toFixed(2)} Z:${worldPos.z.toFixed(2)}`);
             }
           });
 
           target.addEventListener('targetLost', () => {
-            log('🚫 Target lost – box remains');
+            log('🚫 Target lost – model remains');
           });
         }
       });
