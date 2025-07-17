@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Persistent Model (Debug Fixed)</title>
+    <title>MindAR Persistent Model (Test with Duck)</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -47,11 +47,12 @@
       renderer="colorManagement: true;"
     >
       <a-assets>
-        <a-asset-item id="model" src="model.glb"></a-asset-item>
+        <!-- Known working Duck model -->
+        <a-asset-item id="model" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb"></a-asset-item>
       </a-assets>
 
-      <!-- Add light to make model visible -->
-      <a-entity light="type: directional; intensity: 1" position="0 2 2"></a-entity>
+      <!-- Light to see model clearly -->
+      <a-entity light="type: directional; intensity: 1.5;" position="0 4 2"></a-entity>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -60,7 +61,7 @@
           <a-gltf-model
             id="model-entity"
             src="#model"
-            scale="0.5 0.5 0.5"
+            scale="0.8 0.8 0.8"
             position="0 0.1 0"
             visible="false"
           ></a-gltf-model>
@@ -100,8 +101,7 @@
               anchor.object3D.getWorldPosition(worldPos);
               anchor.object3D.getWorldQuaternion(worldQuat);
 
-              // Slightly lift model above image target
-              worldPos.y += 0.1;
+              worldPos.y += 0.1; // lift model above target plane
 
               const scene3D = document.querySelector('a-scene').object3D;
               scene3D.attach(model.object3D);
