@@ -2,91 +2,94 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Persistent Model</title>
+    <title>MindAR Persistent Model Fix</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     <style>
-      body { margin: 0; overflow: hidden; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+      }
+      a-scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
     </style>
   </head>
-
   <body>
     <a-scene
+      embedded
       mindar-image="imageTargetSrc: target.mind; autoStart: true;"
       vr-mode-ui="enabled: false"
       renderer="colorManagement: true;"
-      embedded
     >
-      <!-- Preload assets -->
       <a-assets>
         <a-asset-item id="model" src="model.glb"></a-asset-item>
       </a-assets>
 
-      <!-- Camera -->
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Image target entity -->
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <!-- Anchor for model (initially follows image) -->
         <a-entity id="model-anchor">
           <a-gltf-model
             id="model-entity"
             src="#model"
-            scale="0.1 0.1 0.1"
-            position="0 0 0"
-            rotation="0 0 0"
+            scale="0.5 0.5 0.5"
             visible="false"
           ></a-gltf-model>
         </a-entity>
       </a-entity>
     </a-scene>
 
-    <!-- Persistent Model Component -->
     <script>
       AFRAME.registerComponent('persistent-model', {
         init: function () {
           const model = document.querySelector('#model-entity');
           const anchor = document.querySelector('#model-anchor');
           const target = this.el;
-
           let placed = false;
 
-          target.addEventListener('targetFound', () => {
-            console.log("✅ Target found");
+          console.log('🚀 persistent-model init', model, anchor, target);
 
+          target.addEventListener('targetFound', () => {
+            console.log('✅ targetFound event');
             if (!placed) {
-              // Get world position/rotation of the anchor
               anchor.object3D.updateMatrixWorld(true);
               const worldPos = new THREE.Vector3();
               const worldQuat = new THREE.Quaternion();
-
               anchor.object3D.getWorldPosition(worldPos);
               anchor.object3D.getWorldQuaternion(worldQuat);
 
-              // Detach model from marker
-              const scene = document.querySelector('a-scene').object3D;
-              scene.attach(model.object3D);
+              const scene3D = document.querySelector('a-scene').object3D;
+              scene3D.attach(model.object3D);
 
-              // Apply world transform
               model.object3D.position.copy(worldPos);
               model.object3D.quaternion.copy(worldQuat);
               model.setAttribute('visible', true);
 
               placed = true;
-              console.log("📌 Model placed and will persist");
+              console.log('📌 Model placed at', worldPos);
             }
           });
 
           target.addEventListener('targetLost', () => {
-            console.log("🚫 Target lost – model stays in place");
+            console.log('🚫 targetLost — model remains');
           });
         }
       });
 
-      // Attach component to image target when DOM is ready
       document.addEventListener('DOMContentLoaded', () => {
         const target = document.querySelector('#target');
-        target.setAttribute('persistent-model', '');
+        if (target) {
+          target.setAttribute('persistent-model', '');
+          console.log('Component attached to target');
+        } else console.error('❌ #target not found');
       });
     </script>
   </body>
