@@ -2,38 +2,74 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Draggable 3D Model</title>
+    <title>3D Model on Drawings</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-gesture-detector@3.3.0/dist/aframe-gesture-detector.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-super-hands-component@4.0.5/dist/aframe-super-hands.min.js"></script>
     <style>
-      body { margin: 0; overflow: hidden; }
+      body, html {
+        margin: 0;
+        overflow: hidden;
+        height: 100%;
+        background: black;
+      }
+      #container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      #marker-img {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 300px;
+        height: auto;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+      }
+      #ar-scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        pointer-events: none;
+      }
+      canvas {
+        pointer-events: auto;
+      }
     </style>
   </head>
   <body>
-    <a-scene background="color: #ECECEC">
-      <!-- Centered camera looking directly at the model -->
-      <a-entity camera position="0 1.6 0" look-controls="enabled: false"></a-entity>
+    <div id="container">
+      <!-- Your background image -->
+      <img id="marker-img" src="drawings.png" alt="Drawings Image">
 
-      <!-- Lighting -->
-      <a-entity light="type: ambient; intensity: 0.7"></a-entity>
-      <a-entity light="type: directional; intensity: 0.8" position="1 2 1"></a-entity>
+      <!-- A-Frame scene rendered on top of the image -->
+      <a-scene embedded id="ar-scene">
+        <a-assets>
+          <a-asset-item id="model" src="model.glb"></a-asset-item>
+        </a-assets>
 
-      <!-- Interactive model placed in front of the camera and vertically centered -->
-      <a-entity id="model"
-                gltf-model="model.glb"
-                position="0 1.6 -2"
-                scale="1 1 1"
-                gesture-detector
-                class="interactable"
-                draggable
-                rotatable
-                stretchable>
-      </a-entity>
+        <!-- Static camera and lighting -->
+        <a-entity camera position="0 0 2" look-controls="enabled: false"></a-entity>
+        <a-entity light="type: ambient; intensity: 0.7"></a-entity>
+        <a-entity light="type: directional; intensity: 0.8" position="1 2 1"></a-entity>
 
-      <!-- Touch/cursor handler -->
-      <a-entity super-hands></a-entity>
-    </a-scene>
+        <!-- Your interactive 3D model -->
+        <a-entity
+          gltf-model="#model"
+          position="0 0 0"
+          scale="0.5 0.5 0.5"
+          gesture-detector
+          draggable
+          rotatable
+          stretchable
+        ></a-entity>
+
+        <a-entity super-hands></a-entity>
+      </a-scene>
+    </div>
   </body>
 </html>
