@@ -2,138 +2,38 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Persistent Model (Final)</title>
+    <title>Draggable 3D Model</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-gesture-detector@3.3.0/dist/aframe-gesture-detector.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-super-hands-component@4.0.5/dist/aframe-super-hands.min.js"></script>
     <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        height: 100%;
-        width: 100%;
-      }
-      a-scene {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-      }
-      #log {
-        position: absolute;
-        top: 0;
-        left: 0;
-        max-height: 40%;
-        width: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        color: lime;
-        font-family: monospace;
-        font-size: 12px;
-        z-index: 9999;
-        overflow-y: auto;
-        padding: 6px;
-      }
+      body { margin: 0; overflow: hidden; }
     </style>
   </head>
-
   <body>
-    <!-- Debug Log Output -->
-    <div id="log"></div>
+    <a-scene background="color: #ECECEC">
+      <!-- Centered camera looking directly at the model -->
+      <a-entity camera position="0 1.6 0" look-controls="enabled: false"></a-entity>
 
-    <a-scene
-      embedded
-      mindar-image="imageTargetSrc: target.mind; autoStart: true;"
-      vr-mode-ui="enabled: false"
-      renderer="colorManagement: true;"
-    >
-      <a-assets>
-        <!-- Use your own model.glb or replace with test model -->
-        <a-asset-item id="model" src="model.glb"></a-asset-item>
-      </a-assets>
+      <!-- Lighting -->
+      <a-entity light="type: ambient; intensity: 0.7"></a-entity>
+      <a-entity light="type: directional; intensity: 0.8" position="1 2 1"></a-entity>
 
-      <!-- Optional lighting -->
-      <a-entity light="type: directional; intensity: 1.2;" position="0 2 2"></a-entity>
-
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <!-- MindAR target -->
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <!-- Anchor child (used for placement reference only) -->
-        <a-entity id="model-anchor"></a-entity>
+      <!-- Interactive model placed in front of the camera and vertically centered -->
+      <a-entity id="model"
+                gltf-model="model.glb"
+                position="0 1.6 -2"
+                scale="1 1 1"
+                gesture-detector
+                class="interactable"
+                draggable
+                rotatable
+                stretchable>
       </a-entity>
+
+      <!-- Touch/cursor handler -->
+      <a-entity super-hands></a-entity>
     </a-scene>
-
-    <!-- JS logic to place model persistently -->
-    <script>
-      function log(msg) {
-        const el = document.getElementById('log');
-        if (el) {
-          const line = document.createElement('div');
-          line.textContent = msg;
-          el.appendChild(line);
-          el.scrollTop = el.scrollHeight;
-        }
-      }
-
-      AFRAME.registerComponent('persistent-model', {
-        init: function () {
-          const anchor = document.querySelector('#model-anchor');
-          const target = this.el;
-          let placed = false;
-
-          log('🚀 persistent-model init');
-
-          target.addEventListener('targetFound', () => {
-            log('✅ Target found');
-
-            if (!placed) {
-              anchor.object3D.updateMatrixWorld(true);
-
-              const worldPos = new THREE.Vector3();
-              const worldQuat = new THREE.Quaternion();
-              anchor.object3D.getWorldPosition(worldPos);
-              anchor.object3D.getWorldQuaternion(worldQuat);
-              worldPos.y += 0.1; // lift slightly
-
-              const euler = new THREE.Euler().setFromQuaternion(worldQuat, 'XYZ');
-
-              // Create new model entity at scene root
-              const newModel = document.createElement('a-entity');
-              newModel.setAttribute('gltf-model', '#model');
-              newModel.setAttribute('scale', '0.5 0.5 0.5');
-              newModel.setAttribute('position', {
-                x: worldPos.x,
-                y: worldPos.y,
-                z: worldPos.z
-              });
-              newModel.setAttribute('rotation', {
-                x: THREE.Math.radToDeg(euler.x),
-                y: THREE.Math.radToDeg(euler.y),
-                z: THREE.Math.radToDeg(euler.z)
-              });
-
-              document.querySelector('a-scene').appendChild(newModel);
-              log(`📌 Model placed at X:${worldPos.x.toFixed(2)} Y:${worldPos.y.toFixed(2)} Z:${worldPos.z.toFixed(2)}`);
-              placed = true;
-            }
-          });
-
-          target.addEventListener('targetLost', () => {
-            log('🚫 Target lost – model remains');
-          });
-        }
-      });
-
-      document.addEventListener('DOMContentLoaded', () => {
-        const target = document.querySelector('#target');
-        if (target) {
-          target.setAttribute('persistent-model', '');
-          log('✅ persistent-model component added to target');
-        } else {
-          log('❌ Target entity not found!');
-        }
-      });
-    </script>
   </body>
 </html>
